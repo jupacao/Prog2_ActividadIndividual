@@ -5,21 +5,53 @@
 
 from models.client import Client
 from models.appointment import Appointment
+from datetime import datetime
 
 def capturar_datos():
     print("\n--- INGRESO DE DATOS DEL CLIENTE ---")
-    cedula = input("Cédula: ")
-    nombre = input("Nombre: ")
-    telefono = input("Teléfono: ")
     
+    # Validación Cédula (Solo números)
+    while True:
+        cedula = input("Cédula: ")
+        if cedula.isdigit():
+            break
+        print("Error: La cédula debe contener únicamente números.")
+
+    # Validación Nombre (Solo letras y espacios)
+    while True:
+        nombre = input("Nombre: ")
+        if nombre.replace(" ", "").isalpha():
+            break
+        print("Error: El nombre debe contener únicamente letras.")
+
+    # Validación Teléfono (Solo números)
+    while True:
+        telefono = input("Teléfono: ")
+        if telefono.isdigit():
+            break
+        print("Error: El teléfono debe contener únicamente números.")
+    
+    # Validación Menú Cliente
     print("Tipo de Cliente (1. Particular, 2. EPS, 3. Prepagada)")
     tipos_c = {"1": "Particular", "2": "EPS", "3": "Prepagada"}
-    tipo_cliente = tipos_c.get(input("Seleccione opción (1/2/3): "), "Particular")
+    while True:
+        opcion_c = input("Seleccione opción (1/2/3): ")
+        if opcion_c in tipos_c:
+            tipo_cliente = tipos_c[opcion_c]
+            break
+        print("Error: Seleccione una opción numérica válida (1, 2 o 3).")
     
+    # Validación Menú Atención
     print("Tipo de Atención (1. Limpieza, 2. Calzas, 3. Extracción, 4. Diagnóstico)")
     tipos_a = {"1": "Limpieza", "2": "Calzas", "3": "Extracción", "4": "Diagnóstico"}
-    tipo_atencion = tipos_a.get(input("Seleccione opción (1/2/3/4): "), "Diagnóstico")
+    while True:
+        opcion_a = input("Seleccione opción (1/2/3/4): ")
+        if opcion_a in tipos_a:
+            tipo_atencion = tipos_a[opcion_a]
+            break
+        print("Error: Seleccione una opción numérica válida (1, 2, 3 o 4).")
     
+    # Validación Cantidad
     if tipo_atencion in ["Limpieza", "Diagnóstico"]:
         cantidad = 1
         print(f"Cantidad asignada automáticamente: 1 (por ser {tipo_atencion})")
@@ -31,11 +63,26 @@ def capturar_datos():
                     break
                 print("Error: La cantidad debe ser mayor a cero.")
             except ValueError:
-                print("Por favor, ingrese un número válido.")
+                print("Error: Por favor, ingrese un número válido.")
                 
-    prioridad = input("Prioridad (Normal/Urgente): ").capitalize()
-    fecha_cita = input("Fecha de la cita (DD/MM/AAAA): ")
+    # Validación Prioridad
+    while True:
+        prioridad = input("Prioridad (Normal/Urgente): ").capitalize()
+        if prioridad in ["Normal", "Urgente"]:
+            break
+        print("Error: Escriba exactamente 'Normal' o 'Urgente'.")
 
+    # Validación Fecha
+    while True:
+        fecha_cita = input("Fecha de la cita (DD/MM/AAAA): ")
+        try:
+            # Intenta convertir el texto a una fecha real para validar el formato
+            datetime.strptime(fecha_cita, "%d/%m/%Y")
+            break
+        except ValueError:
+            print("Error: Ingrese una fecha válida usando el formato DD/MM/AAAA (ej. 26/09/2026).")
+
+    # Instanciamos los objetos con datos limpios y validados
     nuevo_cliente = Client(cedula, nombre, telefono, tipo_cliente)
     nueva_cita = Appointment(nuevo_cliente, tipo_atencion, cantidad, prioridad, fecha_cita)
     
@@ -48,7 +95,11 @@ def main():
     while continuar.lower() == "s":
         cita = capturar_datos()
         lista_citas.append(cita)
-        continuar = input("\n¿Desea ingresar otro cliente? (s/n): ")
+        while True:
+            continuar = input("\n¿Desea ingresar otro cliente? (s/n): ").lower()
+            if continuar in ["s", "n"]:
+                break
+            print("Error: Escriba 's' para sí o 'n' para no.")
 
     total_clientes = len(lista_citas)
     ingresos_totales = sum(cita.valor_total for cita in lista_citas)
