@@ -6,13 +6,12 @@
 from models.client import Client
 from models.appointment import Appointment
 from datetime import datetime
+import holidays
 
 def es_invalido_por_patron(cadena):
-    # 1. Verifica si todos los números son exactamente iguales (ej. 1111111)
     if len(set(cadena)) == 1:
         return True
     
-    # 2. Verifica si son consecutivos ascendentes (ej. 1234567) o descendentes (ej. 7654321)
     es_ascendente = all(int(cadena[i]) == int(cadena[i-1]) + 1 for i in range(1, len(cadena)))
     es_descendente = all(int(cadena[i]) == int(cadena[i-1]) - 1 for i in range(1, len(cadena)))
     
@@ -21,7 +20,6 @@ def es_invalido_por_patron(cadena):
 def capturar_datos():
     print("\n--- INGRESO DE DATOS DEL CLIENTE ---")
     
-    # Validación Cédula
     while True:
         cedula = input("Cédula: ")
         if not (cedula.isdigit() and 7 <= len(cedula) <= 10):
@@ -31,21 +29,18 @@ def capturar_datos():
         else:
             break
 
-    # Validación Nombre
     while True:
         nombre = input("Nombre: ")
         if nombre.replace(" ", "").isalpha():
             break
         print("Error: El nombre debe contener únicamente letras.")
 
-    # Validación Apellido
     while True:
         apellido = input("Apellido: ")
         if apellido.replace(" ", "").isalpha():
             break
         print("Error: El apellido debe contener únicamente letras.")
 
-    # Validación Teléfono
     while True:
         telefono = input("Teléfono: ")
         if not (telefono.isdigit() and len(telefono) == 10):
@@ -57,7 +52,6 @@ def capturar_datos():
         else:
             break
     
-    # Menú Tipo de Cliente
     print("Tipo de Cliente (1. Particular, 2. EPS, 3. Prepagada)")
     tipos_c = {"1": "Particular", "2": "EPS", "3": "Prepagada"}
     while True:
@@ -67,7 +61,6 @@ def capturar_datos():
             break
         print("Error: Seleccione una opción válida (1, 2 o 3).")
     
-    # Menú Tipo de Atención
     print("Tipo de Atención (1. Limpieza, 2. Calzas, 3. Extracción, 4. Diagnóstico)")
     tipos_a = {"1": "Limpieza", "2": "Calzas", "3": "Extracción", "4": "Diagnóstico"}
     while True:
@@ -77,7 +70,7 @@ def capturar_datos():
             break
         print("Error: Seleccione una opción válida (1, 2, 3 o 4).")
     
-    # Validación Cantidad
+    # --- VALIDACIÓN DE CANTIDAD CON LÍMITES MÁXIMOS ---
     if tipo_atencion in ["Limpieza", "Diagnóstico"]:
         cantidad = 1
         print(f"Cantidad asignada automáticamente: 1 (por ser {tipo_atencion})")
@@ -85,13 +78,17 @@ def capturar_datos():
         while True:
             try:
                 cantidad = int(input(f"Cantidad de {tipo_atencion} (mayor a 0): "))
-                if cantidad > 0:
+                if cantidad <= 0:
+                    print("Error: La cantidad debe ser mayor a cero.")
+                elif tipo_atencion == "Calzas" and cantidad > 10:
+                    print("Error: El límite máximo para Calzas es de 10 por paciente.")
+                elif tipo_atencion == "Extracción" and cantidad > 8:
+                    print("Error: El límite máximo para Extracción es de 8 por paciente.")
+                else:
                     break
-                print("Error: La cantidad debe ser mayor a cero.")
             except ValueError:
                 print("Error: Por favor, ingrese un número válido.")
                 
-    # Menú Prioridad
     print("Prioridad de Atención (1. Normal, 2. Urgente)")
     tipos_p = {"1": "Normal", "2": "Urgente"}
     while True:
@@ -101,8 +98,10 @@ def capturar_datos():
             break
         print("Error: Seleccione una opción válida (1 o 2).")
 
-    # Validación Fecha
+    # Validación Fecha y Festivos
     fecha_actual = datetime.now().date()
+    festivos_colombia = holidays.CO() 
+    
     while True:
         fecha_cita = input("Fecha de la cita (DD/MM/AAAA): ")
         try:
@@ -111,6 +110,9 @@ def capturar_datos():
                 print("Error: La fecha de la cita no puede ser anterior al día de hoy.")
             elif fecha_obj.weekday() == 6:
                 print("Error: El consultorio no atiende los domingos. Por favor seleccione otro día.")
+            elif fecha_obj in festivos_colombia:
+                nombre_festivo = festivos_colombia.get(fecha_obj)
+                print(f"Error: El consultorio no atiende en días festivos ({nombre_festivo}).")
             else:
                 break
         except ValueError:
@@ -133,24 +135,24 @@ def main():
             if continuar in ["s", "n"]:
                 break
             print("Error: Escriba 'S' para sí o 'N' para no.")
-
+            
     total_clientes = len(lista_citas)
     ingresos_totales = sum(cita.valor_total for cita in lista_citas)
     extracciones = sum(1 for cita in lista_citas if cita.tipo_atencion == "Extracción")
-
+    
     print("\n" + "="*40)
     print("--- RESULTADOS DEL CONSULTORIO ---")
     print(f"1. Total clientes: {total_clientes}")
     print(f"2. Ingresos totales recibidos: ${ingresos_totales:,}")
     print(f"3. Número de clientes para extracción: {extracciones}")
     print("="*40)
-
+    
     citas_ordenadas = sorted(lista_citas, key=lambda x: x.valor_atencion, reverse=True)
     
     print("\n--- LISTA ORDENADA POR VALOR DE ATENCIÓN (Mayor a menor) ---")
     for cita in citas_ordenadas:
         print(f"Paciente: {cita.client.nombre} {cita.client.apellido} - Cédula: {cita.client.cedula} - Atención: {cita.tipo_atencion} - Valor: ${cita.valor_atencion:,}")
-
+        
     print("\n--- BÚSQUEDA DE CLIENTE ---")
     cedula_buscar = input("Ingrese la cédula del cliente a buscar: ")
     
